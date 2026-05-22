@@ -22,11 +22,12 @@
 | 数据库 | SQLite (WAL 模式) | 单文件数据库，零运维 |
 | 媒体处理 | Pillow + ffprobe/ffmpeg | 缩略图生成、视频元数据提取、抽帧 |
 | AI | OpenAI SDK → MiMo API | 聊天提示词助手 |
+| 部署 | Docker + Docker Compose | 容器化部署 |
 
 ## 项目结构
 
 ```
-zhongzhuan/
+prompt-gallery/
 ├── backend/
 │   ├── main.py              # FastAPI 入口 + 聊天 API
 │   ├── database.py          # SQLite 连接 + 表定义
@@ -52,10 +53,15 @@ zhongzhuan/
 │   ├── originals/           # 原始文件
 │   ├── thumbs/              # 缩略图
 │   └── refs/                # 参考图
-└── prompt_gallery.db        # SQLite 数据库
+├── prompt_gallery.db        # SQLite 数据库
+├── Dockerfile               # 后端镜像
+├── docker-compose.yml       # 容器编排
+└── requirements.txt         # Python 依赖
 ```
 
 ## 启动
+
+### 本地开发
 
 ```bash
 # 安装 Python 依赖
@@ -68,7 +74,88 @@ python -m uvicorn backend.main:app --host 0.0.0.0 --port 8923
 npm run dev
 ```
 
+### Docker 部署
+
+```bash
+# 构建并启动
+docker compose up -d
+
+# 查看日志
+docker compose logs -f
+
+# 停止
+docker compose down
+
+# 重新构建（仅改 Dockerfile/requirements.txt 时需要）
+docker compose up -d --build
+
+# 重启容器（改代码/配置后只需 restart，无需 rebuild）
+docker compose restart
+
+# 重启单个服务
+docker compose restart frontend
+docker compose restart backend
+
+# 重新创建容器（环境变量变更后需要 up 而非 restart）
+docker compose up -d frontend
+```
+
+> **Docker 注意事项：**
+> - 前端代码通过 volume 挂载，改代码后 `restart` 即可，无需 `--build`
+> - 只有改了 Dockerfile 或 requirements.txt 才需要 `--build`
+> - 环境变量变更（docker-compose.yml）需要 `up -d` 重新创建容器
+> - 清理未使用的镜像/缓存：`docker system prune -a --volumes`
+
 同一局域网内其他设备访问 `http://<主机IP>:4831`。
+
+## Git 版本控制
+
+```bash
+# 查看状态
+git status
+
+# 查看提交历史
+git log --oneline
+
+# 提交更改
+git add .
+git commit -m "描述你的更改"
+
+# 撤销未暂存的更改
+git checkout .
+
+# 暂存当前更改
+git stash
+
+# 恢复暂存的更改
+git stash pop
+```
+
+## API 端点
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/items` | 列出所有 items |
+| POST | `/api/items` | 上传文件创建 item（multipart） |
+| PUT | `/api/items/{id}` | 更新元数据（JSON） |
+| DELETE | `/api/items/{id}` | 删除 item + 文件 |
+| POST | `/api/items/batch-delete` | 批量删除 |
+| PUT | `/api/items/{id}/ref` | 上传参考图 |
+| DELETE | `/api/items/{id}/ref` | 删除参考图 |
+| POST | `/api/items/migrate-refs` | 迁移视频参考图 |
+| GET | `/api/media/{id}/thumb` | 缩略图 |
+| GET | `/api/media/{id}/original` | 原始文件（Range） |
+| GET | `/api/media/{id}/ref` | 参考图 |
+| POST | `/api/chat` | AI 聊天（SSE 流式） |
+
+## 关键约定
+
+- 数据库字段 `snake_case`，前端字段 `camelCase`，`db/index.js` 中 `normalizeItem()` 负责转换
+- `getMedia(id)` / `getThumb(id)` 返回 API URL 字符串（如 `/api/media/xxx/original`），不是 Blob URL
+- `putItem(item, isNew)` — `isNew=true` 走 FormData 上传，`isNew=false` 走 JSON 更新
+- 前端 `vite.config.js` 配置了 `/api` 代理到 `localhost:8923`
+- 聊天功能使用独立的 IndexedDB（`PromptGalleryChatDB`），不需要迁移
+- 视频自动生成全分辨率第一帧作为默认参考图
 
 ## 性能演进
 
