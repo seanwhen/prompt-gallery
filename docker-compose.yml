@@ -1,0 +1,21 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8923:8923"
+    volumes:
+      - ./media:/app/media
+      - ./prompt_gallery.db:/app/prompt_gallery.db
+    restart: unless-stopped
+
+  frontend:
+    image: node:18-slim
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "4831:4831"
+    volumes:
+      - .:/app
+    depends_on:
+      - backend
+    restart: unless-stopped
