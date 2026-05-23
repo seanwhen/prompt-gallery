@@ -33,6 +33,8 @@ prompt-gallery/
 │   ├── database.py          # SQLite 连接 + 表定义
 │   ├── models.py            # Pydantic 模型
 │   ├── config.py            # 路径配置
+│   ├── .env.example         # 环境变量模板（API Key 留空）
+│   ├── .env                 # 环境变量配置（gitignore，需自行创建）
 │   ├── routers/
 │   │   ├── items.py         # /api/items CRUD
 │   │   └── media.py         # /api/media 文件服务 + Range 请求
@@ -60,6 +62,14 @@ prompt-gallery/
 ```
 
 ## 启动
+
+### 环境配置
+
+1. 复制环境变量模板并填入你的 API Key：
+```bash
+cp backend/.env.example backend/.env
+# 编辑 backend/.env，填入你的 MIMO_API_KEY
+```
 
 ### 本地开发
 

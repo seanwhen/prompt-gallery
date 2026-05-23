@@ -28,6 +28,9 @@ media/thumbs/
 media/refs/
 prompt_gallery.db
 
+# Environment variables (API keys)
+backend/.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
