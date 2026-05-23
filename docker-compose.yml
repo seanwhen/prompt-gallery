@@ -3,6 +3,8 @@ services:
     build: .
     ports:
       - "8923:8923"
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend:/app/backend          # 源码挂载，修改实时生效
       - ./media:/app/media
