@@ -16,7 +16,6 @@ RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trus
 
 # Copy backend code
 COPY backend/ ./backend/
-COPY media/ ./media/
 
 EXPOSE 8923
 
