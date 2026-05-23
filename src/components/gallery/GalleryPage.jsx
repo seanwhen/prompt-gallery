@@ -62,7 +62,7 @@ export default function GalleryPage() {
       for (const file of fileList) {
         const isVideo = file.type.startsWith('video');
         const item = {
-          id: crypto.randomUUID(),
+          id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2),
           type: isVideo ? 'video' : 'image',
           fileName: file.name,
           prompt: '',
