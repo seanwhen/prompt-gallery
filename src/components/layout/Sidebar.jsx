@@ -55,7 +55,7 @@ const ICONS = {
 
 export default function Sidebar({ onExport, onImport }) {
   const { state, dispatch } = useApp();
-  const { usedMB, quotaMB, pct } = useStorageEstimate();
+  const { usedStr, quotaStr, pct } = useStorageEstimate();
   const fileInputRef = useRef(null);
 
   return (
@@ -185,7 +185,7 @@ export default function Sidebar({ onExport, onImport }) {
         {state.sidebarCollapsed ? (
           <>
             {/* Collapsed storage icon */}
-            <div className="flex justify-center py-2 text-text3" title={`存储: ${usedMB}MB / ${quotaMB}MB`}>
+            <div className="flex justify-center py-2 text-text3" title={`存储: ${usedStr} / ${quotaStr}`}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
               </svg>
@@ -229,7 +229,7 @@ export default function Sidebar({ onExport, onImport }) {
                   style={{ width: Math.min(pct, 100) + '%' }}
                 />
               </div>
-              <span>{usedMB}MB / {quotaMB}MB</span>
+              <span>{usedStr} / {quotaStr}</span>
             </div>
 
             {/* Export */}
