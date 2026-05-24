@@ -11,10 +11,15 @@ const MediaCard = memo(function MediaCard({ item, onOpenEdit, onOpenLightbox }) 
   const [hovering, setHovering] = useState(false);
   const [muted, setMuted] = useState(true);
   const [isVisible, setIsVisible] = useState(false);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
   const cardRef = useRef(null);
 
   const isSelected = state.selectedIds.includes(item.id);
+  const isCurrentAudioPlaying = state.currentlyPlayingAudioId === item.id;
 
   // IntersectionObserver: load when enters viewport
   useEffect(() => {
@@ -104,6 +109,74 @@ const MediaCard = memo(function MediaCard({ item, onOpenEdit, onOpenLightbox }) 
     showToast('已删除');
   };
 
+  // Audio player handlers
+  const toggleAudioPlay = (e) => {
+    e.stopPropagation();
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (audioPlaying) {
+      audio.pause();
+      setAudioPlaying(false);
+      dispatch({ type: 'SET_CURRENT_AUDIO', audioId: null });
+    } else {
+      audio.play().catch(() => {});
+      setAudioPlaying(true);
+      dispatch({ type: 'SET_CURRENT_AUDIO', audioId: item.id });
+    }
+  };
+
+  // Stop audio when another audio starts playing
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (!isCurrentAudioPlaying && audioPlaying) {
+      audio.pause();
+      audio.currentTime = 0;
+      setAudioPlaying(false);
+      setAudioProgress(0);
+    }
+  }, [isCurrentAudioPlaying, audioPlaying]);
+
+  const handleAudioTimeUpdate = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      setAudioProgress(audio.currentTime);
+    }
+  };
+
+  const handleAudioLoadedMetadata = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      setAudioDuration(audio.duration || 0);
+    }
+  };
+
+  const handleAudioEnded = () => {
+    setAudioPlaying(false);
+    setAudioProgress(0);
+    dispatch({ type: 'SET_CURRENT_AUDIO', audioId: null });
+  };
+
+  const handleProgressClick = (e) => {
+    e.stopPropagation();
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percentage = clickX / rect.width;
+    audio.currentTime = percentage * audio.duration;
+  };
+
+  const formatTime = (seconds) => {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const displayUrl = fullUrl;
   const meta = item.videoMeta;
   const videoRatio = meta && meta.width > 0 && meta.height > 0
@@ -144,7 +217,70 @@ const MediaCard = memo(function MediaCard({ item, onOpenEdit, onOpenLightbox }) 
       >
         {isVisible ? (
           displayUrl ? (
-            item.type === 'video' ? (
+            item.type === 'audio' ? (
+              // Audio player card
+              <div
+                className="w-full aspect-[4/3] bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] flex flex-col items-center justify-center p-4 relative"
+              >
+                <audio
+                  ref={audioRef}
+                  src={fullUrl || undefined}
+                  onTimeUpdate={handleAudioTimeUpdate}
+                  onLoadedMetadata={handleAudioLoadedMetadata}
+                  onEnded={handleAudioEnded}
+                  preload="metadata"
+                />
+
+                {/* Decorative circles */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div className="absolute -top-10 -left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl" />
+                  <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl" />
+                </div>
+
+                {/* Play button */}
+                <button
+                  onClick={toggleAudioPlay}
+                  className="relative z-10 w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center cursor-pointer transition-all hover:bg-white/20 hover:scale-105 active:scale-95 mb-3"
+                >
+                  {audioPlaying ? (
+                    // Pause icon
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                      <rect x="6" y="4" width="4" height="16" rx="1"/>
+                      <rect x="14" y="4" width="4" height="16" rx="1"/>
+                    </svg>
+                  ) : (
+                    // Play icon
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white" className="ml-1">
+                      <polygon points="6,3 20,12 6,21"/>
+                    </svg>
+                  )}
+                </button>
+
+                {/* Progress bar */}
+                <div className="w-full max-w-[80%] relative z-10">
+                  <div
+                    className="w-full h-1.5 bg-white/10 rounded-full cursor-pointer overflow-hidden"
+                    onClick={handleProgressClick}
+                  >
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-400 to-pink-400 rounded-full transition-all duration-100"
+                      style={{ width: audioDuration ? `${(audioProgress / audioDuration) * 100}%` : '0%' }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1.5">
+                    <span className="text-[10px] text-white/50">{formatTime(audioProgress)}</span>
+                    <span className="text-[10px] text-white/50">{formatTime(audioDuration)}</span>
+                  </div>
+                </div>
+
+                {/* Music note decoration */}
+                <div className="absolute bottom-3 right-3 text-white/10">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+                  </svg>
+                </div>
+              </div>
+            ) : item.type === 'video' ? (
               <div
                 className="relative w-full"
                 onMouseEnter={() => {
@@ -224,10 +360,7 @@ const MediaCard = memo(function MediaCard({ item, onOpenEdit, onOpenLightbox }) 
       <div className="p-3.5">
         {item.type === 'audio' ? (
           <div className="flex items-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent shrink-0">
-              <path d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
-            </svg>
-            <div className="text-[13px] text-text truncate flex-1">{item.fileName || '未命名音频'}</div>
+            <div className="text-[13px] text-text truncate flex-1" title={item.fileName}>{item.fileName || '未命名音频'}</div>
           </div>
         ) : item.prompt ? (
           <div className="text-[13px] leading-relaxed text-text whitespace-pre-wrap break-words max-h-[120px] overflow-y-auto">

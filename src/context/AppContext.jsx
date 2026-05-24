@@ -13,6 +13,7 @@ const initialState = {
   searchQuery: '',
   activeTags: [],
   sidebarCollapsed: localStorage.getItem('pgSidebarCollapsed') === 'true',
+  currentlyPlayingAudioId: null,
 };
 
 function reducer(state, action) {
@@ -82,6 +83,8 @@ function reducer(state, action) {
       localStorage.setItem('pgSidebarCollapsed', next);
       return { ...state, sidebarCollapsed: next };
     }
+    case 'SET_CURRENT_AUDIO':
+      return { ...state, currentlyPlayingAudioId: action.audioId };
     default:
       return state;
   }

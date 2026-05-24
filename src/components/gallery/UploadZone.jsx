@@ -21,13 +21,13 @@ export default function UploadZone({ onFilesSelected }) {
       `}
     >
       <div className="text-[36px] opacity-40">+</div>
-      <p className="text-text2 text-sm mt-1.5">拖拽图片/视频到此处，或点击上传</p>
-      <p className="text-xs mt-1 opacity-40">支持 JPG, PNG, GIF, WebP, MP4, WebM</p>
+      <p className="text-text2 text-sm mt-1.5">拖拽图片/视频/音频到此处，或点击上传</p>
+      <p className="text-xs mt-1 opacity-40">支持 JPG, PNG, GIF, WebP, MP4, WebM, MP3, WAV, FLAC, OGG</p>
       <input
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,video/*"
+        accept="image/*,video/*,audio/*"
         onChange={(e) => onFilesSelected(e.target.files)}
         className="hidden"
       />
