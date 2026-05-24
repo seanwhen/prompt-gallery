@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 
 from backend.routers import items, media
+from backend.config import DB_PATH, MEDIA_DIR
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,6 +50,29 @@ Respond in the same language as the user's message. Be concise and professional.
 
 
 from typing import Union
+
+
+def _get_dir_size(path: Path) -> int:
+    """递归计算目录大小"""
+    total = 0
+    try:
+        for item in path.rglob("*"):
+            if item.is_file():
+                total += item.stat().st_size
+    except (OSError, PermissionError):
+        pass
+    return total
+
+
+@app.get("/api/storage")
+async def get_storage():
+    """获取存储使用情况：数据库 + 媒体文件"""
+    db_size = DB_PATH.stat().st_size if DB_PATH.exists() else 0
+    media_size = _get_dir_size(MEDIA_DIR)
+    used = db_size + media_size
+    # 默认配额 10GB
+    quota = 10 * 1024 * 1024 * 1024
+    return {"used": used, "quota": quota}
 
 
 class ChatMessage(BaseModel):

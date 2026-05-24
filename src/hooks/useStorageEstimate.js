@@ -6,11 +6,14 @@ export function useStorageEstimate() {
   useEffect(() => {
     async function load() {
       try {
-        const estimate = await navigator.storage.estimate();
-        setStorage({
-          used: estimate.usage || 0,
-          quota: estimate.quota || 0,
-        });
+        const res = await fetch('/api/storage');
+        if (res.ok) {
+          const data = await res.json();
+          setStorage({
+            used: data.used || 0,
+            quota: data.quota || 0,
+          });
+        }
       } catch {}
     }
     load();
